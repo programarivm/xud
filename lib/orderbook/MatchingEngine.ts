@@ -62,8 +62,8 @@ class MatchingEngine {
     };
   }
 
-  public static getMatchingQuantity = (buyOrder: StampedOrder, sellOrder: StampedOrder): number => {
-    if (buyOrder.price >= sellOrder.price) {
+  public static getMatchingQuantity = (buyOrder?: StampedOrder, sellOrder?: StampedOrder): number => {
+    if (buyOrder && sellOrder && buyOrder.price >= sellOrder.price) {
       return Math.min(buyOrder.quantity, sellOrder.quantity * -1);
     } else {
       return 0;
@@ -87,7 +87,7 @@ class MatchingEngine {
     const matches: matchingEngine.OrderMatch[] = [];
     let remainingOrder: StampedOwnOrder | null = { ...order };
 
-    const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
+    const getMatchingQuantity = (remainingOrder: StampedOwnOrder, oppositeOrder?: StampedOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
       : MatchingEngine.getMatchingQuantity(oppositeOrder, remainingOrder);
 

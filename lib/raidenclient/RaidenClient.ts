@@ -197,7 +197,7 @@ class RaidenClient extends BaseClient {
     const endpoint = 'channels';
     const res = await this.sendRequest(endpoint, 'PUT', payload);
 
-    const body = await parseResponseBody<{ channel_address }>(res);
+    const body = await parseResponseBody<{ channel_address: string }>(res);
     return body.channel_address;
   }
 
@@ -227,7 +227,7 @@ class RaidenClient extends BaseClient {
     const endpoint = `address`;
     const res = await this.sendRequest(endpoint, 'GET');
 
-    const body = await parseResponseBody<{ our_address }>(res);
+    const body = await parseResponseBody<{ our_address: string }>(res);
     return body.our_address;
   }
 }
