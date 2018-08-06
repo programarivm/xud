@@ -7,12 +7,12 @@ import { PairInstance } from '../types/db';
 import { GetInfoResponse } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBook';
 import { MatchingResult } from '../types/matchingEngine';
-import { OwnOrder } from '../types/orders';
+import { OwnOrder, StampedPeerOrder } from '../types/orders';
 import { default as orderErrors, errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { default as serviceErrors, errorCodes as serviceErrorCodes } from '../service/errors';
 import { default as p2pErrors, errorCodes as p2pErrorCodes } from '../p2p/errors';
 
-function serializeDateProperties(response) {
+function serializeDateProperties(response: any) {
   Object.keys(response).forEach((key) => {
     if (response[key] instanceof Date) {
       response[key] = response[key].getTime();
@@ -125,14 +125,14 @@ class GrpcService {
    * See [[Service.subscribePeerOrders]]
    */
   public subscribePeerOrders: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
-    this.service.subscribePeerOrders(order => call.write({ order }));
+    this.service.subscribePeerOrders((order: StampedPeerOrder) => call.write({ order }));
   }
 
   /*
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
-    this.service.subscribeSwaps(result => call.write({ result }));
+    this.service.subscribeSwaps((result: any) => call.write({ result }));
   }
 }
 

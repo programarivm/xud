@@ -22,12 +22,17 @@ interface GrpcResponse {
   toObject: Function;
 }
 
+interface MethodIndex {
+  [methodName: string]: Function | undefined;
+}
+
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
   private lightning!: LightningClient;
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
+  private static lightningMethods: MethodIndex = { ...LightningClient.prototype };
 
   /**
    * Create an lnd client.
@@ -36,7 +41,6 @@ class LndClient extends BaseClient {
   constructor(config: LndClientConfig) {
     super(Logger.lnd);
     const { disable, certpath, macaroonpath } = config;
-
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
     } else if (!fs.existsSync(certpath)) {
@@ -62,13 +66,18 @@ class LndClient extends BaseClient {
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      this.lightning[methodName](params, this.meta, (err: grpc.ServiceError, response: GrpcResponse) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(response.toObject());
-        }
-      });
+      const lightningMethod = LndClient.lightningMethods[methodName];
+      if (lightningMethod) {
+        lightningMethod(params, this.meta, (err: grpc.ServiceError, response: GrpcResponse) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(response.toObject());
+          }
+        });
+      } else {
+        reject(`no lightning method exists with name ${methodName}`);
+      }
     });
   }
 

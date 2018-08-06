@@ -4,7 +4,7 @@ import * as bodyParser from 'body-parser';
 import Logger from '../../Logger';
 import path from 'path';
 import { Server } from 'net';
-import { middleware } from './GrpcExpressMiddleware';
+import grpcGateway from '@exchangeunion/grpc-dynamic-gateway';
 import swaggerUi from 'swagger-ui-express';
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
@@ -27,7 +27,7 @@ class GrpcWebProxyServer {
   public listen = (proxyPort: number, grpcPort: number, grpcHost: string): Promise<void> => {
     // Load the proxy on / URL
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
-    this.app.use('/api/', middleware(['xudrpc.proto'], `${grpcHost}:${grpcPort}`, grpc.credentials.createInsecure(), protoPath));
+    this.app.use('/api/', grpcGateway(['xudrpc.proto'], `${grpcHost}:${grpcPort}`, grpc.credentials.createInsecure(), protoPath));
     return new Promise((resolve) => {
       this.server = this.app.listen(proxyPort, () => {
         this.logger.info(`gRPC Web API proxy listening on port ${proxyPort}`);

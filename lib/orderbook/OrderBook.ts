@@ -220,45 +220,55 @@ class OrderBook extends EventEmitter {
     });
   }
 
-  private updateOrderQuantity = (order: orders.StampedOrder, decreasedQuantity: number) => {
+  private updateOrderQuantity = (order: orders.StampedOrder, quantityToDecrease: number) => {
     const isOwnOrder = orders.isOwnOrder(order);
     const orderMap = this.getOrderMap(isOwnOrder ? this.ownOrders : this.peerOrders, order);
 
-    orderMap.get(order.id).quantity -= decreasedQuantity;
-    if (orderMap[order.id].quantity === 0) {
+    const orderToUpdate = orderMap.get(order.id);
+    if (!orderToUpdate) {
+      throw errors.ORDER_NOT_FOUND(order.id);
+    }
+    orderToUpdate.quantity -= quantityToDecrease;
+    if (orderToUpdate.quantity === 0) {
       if (isOwnOrder) {
         const { localId } = order as orders.StampedOwnOrder;
-        delete this.localIdMap[localId];
+        this.localIdMap.delete(localId);
       }
-      delete orderMap[order.id];
+      orderMap.delete(order.id);
     }
   }
 
   private addOrder = (type: OrdersMap, order: orders.StampedOrder) => {
     if (this.isOwnOrdersMap(type)) {
       const { localId } = order as orders.StampedOwnOrder;
-      this.localIdMap[localId] = order.id;
+      this.localIdMap.set(localId, order.id);
     }
 
-    this.getOrderMap(type, order)[order.id] = order;
+    this.getOrderMap(type, order).set(order.id, order);
   }
 
   private removeOrder = (type: OrdersMap, orderId: string, pairId: string): boolean => {
-    const orders = type[pairId];
+    const orders = type.get(pairId);
 
-    if (orders.buyOrders[orderId]) {
-      delete orders.buyOrders[orderId];
+    if (!orders) {
+      throw errors.INVALID_PAIR_ID(pairId);
+    }
+    if (orders.buyOrders.has(orderId)) {
+      orders.buyOrders.delete(orderId);
       return true;
-    } else if (orders.sellOrders[orderId]) {
-      delete orders.sellOrders[orderId];
+    } else if (orders.sellOrders.has(orderId)) {
+      orders.sellOrders.delete(orderId);
       return true;
     }
 
     return false;
   }
 
-  private getOrderMap = (type: OrdersMap, order: orders.StampedOrder): OrdersMap => {
-    const orders = type[order.pairId];
+  private getOrderMap = (type: OrdersMap, order: orders.StampedOrder): Map<string, orders.StampedOrder> => {
+    const orders = type.get(order.pairId);
+    if (!orders) {
+      throw errors.INVALID_PAIR_ID(order.pairId);
+    }
     if (order.quantity > 0) {
       return orders.buyOrders;
     } else {
