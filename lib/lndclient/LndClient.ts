@@ -58,10 +58,10 @@ class LndClient extends BaseClient {
 
   private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
-      if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
-        return;
-      }
+      // if (this.isDisabled()) {
+      //   reject(errors.LND_IS_DISABLED);
+      //   return;
+      // }
       this.lightning[methodName](params, this.meta, (err: grpc.ServiceError, response: GrpcResponse) => {
         if (err) {
           reject(err);
@@ -94,6 +94,7 @@ class LndClient extends BaseClient {
    * Return general information concerning the lightning node including it’s identity pubkey, alias, the chains it
    * is connected to, and information concerning the number of open+pending channels.
    */
+  // TODO (Offer): add context timeout for the call.
   public getInfo = (): Promise<lndrpc.GetInfoResponse.AsObject> => {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse.AsObject>('getInfo', new lndrpc.GetInfoRequest());
   }
