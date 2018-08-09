@@ -127,7 +127,7 @@ class Pool extends EventEmitter {
       throw err;
     }
 
-    const peer = Peer.fromOutbound(socketAddress);
+    const peer = Peer.fromOutbound(socketAddress, this.handshakeData);
     await this.tryOpenPeer(peer);
     return peer;
   }
@@ -152,8 +152,8 @@ class Pool extends EventEmitter {
 
   private openPeer = async (peer: Peer): Promise<void> => {
     this.bindPeer(peer);
-    await peer.open(this.handshakeData);
     this.peers.add(peer);
+    await peer.open();
   }
 
   public closePeer = async (address: string, port: number): Promise<void> => {
@@ -182,7 +182,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
-    const peer = Peer.fromInbound(socket);
+    const peer = Peer.fromInbound(socket, this.handshakeData);
     await this.openPeer(peer);
     return peer;
   }

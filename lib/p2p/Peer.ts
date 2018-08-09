@@ -25,17 +25,16 @@ type PeerInfo = {
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  on(event: 'packet', listener: (packet: Packet) => void): this;
-  on(event: 'error', listener: (err: Error) => void): this;
   once(event: 'open', listener: (handshakeState: HandshakeState) => void): this;
+  once(event: 'connect', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   once(event: 'ban', listener: () => void): this;
-  emit(event: 'connect'): boolean;
-  emit(event: 'ban'): boolean;
-  emit(event: 'open', handshakeState: HandshakeState): boolean;
-  emit(event: 'close'): boolean;
-  emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
+  emit(event: 'error', err: Error): boolean;
+  emit(event: 'open', handshakeState: HandshakeState): boolean;
+  emit(event: 'connect'): boolean;
+  emit(event: 'close'): boolean;
+  emit(event: 'ban'): boolean;
 }
 
 /** Represents a remote XU peer */
@@ -102,20 +101,20 @@ class Peer extends EventEmitter {
     };
   }
 
-  constructor() {
+  constructor(private handshakeData: HandshakeState) {
     super();
 
     this.bindParser(this.parser);
   }
 
-  public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer();
+  public static fromOutbound(socketAddress: SocketAddress, handshakeData: HandshakeState): Peer {
+    const peer = new Peer(handshakeData);
     peer.connect(socketAddress);
     return peer;
   }
 
-  public static fromInbound(socket: Socket): Peer {
-    const peer = new Peer();
+  public static fromInbound(socket: Socket, handshakeData: HandshakeState): Peer {
+    const peer = new Peer(handshakeData);
     peer.accept(socket);
     return peer;
   }
@@ -128,17 +127,20 @@ class Peer extends EventEmitter {
     }
   }
 
-  public open = async (handshakeData: HandshakeState): Promise<void> => {
+  public open = async (): Promise<void> => {
     assert(!this.opened);
     this.opened = true;
 
     await this.initConnection();
     this.initStall();
-    await this.initHello(handshakeData);
-    this.finalizeOpen();
+    await this.initHello(this.handshakeData);
 
-    // let the pool know that this peer is ready to go
-    this.emit('open', this.handshakeState!);
+    if (!this.closed) {
+      this.finalizeOpen();
+
+      // let the pool know that this peer is ready to go
+      this.emit('open', this.handshakeState!);
+    }
   }
 
   /**
@@ -292,8 +294,6 @@ class Peer extends EventEmitter {
   }
 
   private finalizeOpen = (): void => {
-    assert(!this.closed);
-
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
   }
@@ -521,6 +521,12 @@ class Peer extends EventEmitter {
       entry.resolve(packet);
 
       this.handshakeState = packet.body;
+
+      if (this.handshakeState!.nodePubKey === this.handshakeData.nodePubKey) {
+        // TODO: remove from hosts table
+        this.logger.warn(`Peer (${this.id}) has the same public key as this node`);
+        this.close();
+      }
     }
   }
 
