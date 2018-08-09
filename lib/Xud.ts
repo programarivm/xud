@@ -66,7 +66,7 @@ class Xud {
         pairs.push(pair.id);
       });
 
-      this.pool.init({
+      await this.pool.init({
         pairs,
         version: '1.0',
         nodePubKey: this.nodeKey.nodePubKey,
