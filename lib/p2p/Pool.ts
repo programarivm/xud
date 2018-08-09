@@ -1,4 +1,5 @@
 import net, { Server, Socket } from 'net';
+import http from 'http';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import Peer, { PeerInfo } from './Peer';
@@ -15,6 +16,7 @@ import { HandshakeState } from '../types/p2p';
 type PoolConfig = {
   listen: boolean;
   port: number;
+  externalip?: string,
 };
 
 interface Pool {
@@ -56,6 +58,34 @@ class Pool extends EventEmitter {
     }
 
     this.handshakeData = handshakeData;
+
+    if (!this.config.externalip) {
+      try {
+        const externalip = await new Promise<string>((resolve, reject) => {
+          http.get('http://ipv4.icanhazip.com/', (res) => {
+            let body: string = '';
+            res.on('data', (chunk) => {
+              body += chunk;
+            });
+            res.on('end', () => {
+              this.logger.verbose(`retrieved external IP: ${body}`);
+              resolve(body);
+            });
+            res.on('error', (err: Error) => {
+              reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+            });
+          }).on('error', (err: Error) => {
+            reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+          });
+        });
+
+        // TODO: verify that this address is reachable
+        this.config.externalip = `${externalip}:${this.config.port}`;
+      } catch (error) {
+        this.logger.error(error.message);
+        return;
+      }
+    }
 
     this.logger.info('Connecting to known / previously connected peers');
     await this.hosts.load();

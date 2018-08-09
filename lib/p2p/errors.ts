@@ -4,6 +4,7 @@ const codesPrefix = errorCodesPrefix.P2P;
 const errorCodes = {
   ADDRESS_ALREADY_CONNECTED: codesPrefix.concat('.1'),
   NOT_CONNECTED: codesPrefix.concat('.2'),
+  EXTERNAL_IP_UNRETRIEVABLE: codesPrefix.concat('.3'),
 };
 
 const errors = {
@@ -14,6 +15,10 @@ const errors = {
   NOT_CONNECTED: (address: string) => ({
     message: `Address (${address}) is not connected`,
     code: errorCodes.NOT_CONNECTED,
+  }),
+  EXTERNAL_IP_UNRETRIEVABLE: (err: Error) => ({
+    message: `could not retrieve external IP: ${err.message}`,
+    code: errorCodes.EXTERNAL_IP_UNRETRIEVABLE,
   }),
 };
 

@@ -56,6 +56,10 @@ const { argv } = require('yargs')
       type: 'number',
       alias: 'p',
     },
+    'p2p.externalip': {
+      describe: 'Combination of your external IP and port',
+      type: 'string',
+    },
     'raiden.disable': {
       describe: 'Disable raiden integration',
       type: 'boolean',

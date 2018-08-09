@@ -1,5 +1,4 @@
 import http from 'http';
-
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
